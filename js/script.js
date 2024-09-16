@@ -43,11 +43,9 @@ class Note {
 
     // Remove note from the UI and LocalStorage
     removeNote() {
-        this.noteDiv.remove();
-        notes.splice(this.index, 1);
-        this.saveToLocalStorage();
-        // Refresh indexes for remaining notes
-        Note.refreshIndexes();
+        notes.splice(this.index, 1); // Remove from notes array
+        this.saveToLocalStorage(); // Update localStorage
+        this.reRenderNotes(); // Re-render the UI to reflect changes
     }
 
     // Save notes to LocalStorage
@@ -58,12 +56,11 @@ class Note {
         }
     }
 
-    // Static method to refresh indexes after a note is removed
-    static refreshIndexes() {
-        Array.from(notesContainer.children).forEach((noteDiv, index) => {
-            const textArea = noteDiv.querySelector('textarea');
-            const note = new Note(textArea.value, index);
-            notes[index] = textArea.value;
+    // Re-render all notes after deletion to update UI and indexes
+    reRenderNotes() {
+        notesContainer.innerHTML = ""; // Clear the existing notes
+        notes.forEach((noteContent, index) => {
+            new Note(noteContent, index); // Create a new note UI for each note
         });
     }
 
