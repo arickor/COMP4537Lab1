@@ -1,55 +1,93 @@
+class Note {
+    constructor(content = "", index) {
+        this.content = content;
+        this.index = index;
+        this.createNoteUI();
+    }
+
+    // Create the note UI (textarea and remove button)
+    createNoteUI() {
+        this.noteDiv = document.createElement('div');
+        this.noteDiv.classList.add('note', 'mb-2');
+
+        // Create text area
+        this.textArea = document.createElement('textarea');
+        this.textArea.value = this.content;
+        this.textArea.classList.add('form-control', 'mb-2');
+        this.noteDiv.appendChild(this.textArea);
+
+        // Create remove button
+        this.removeBtn = document.createElement('button');
+        this.removeBtn.textContent = "Remove";
+        this.removeBtn.classList.add('btn', 'btn-danger', 'mb-2');
+        this.noteDiv.appendChild(this.removeBtn);
+
+        // Append note to container
+        notesContainer.appendChild(this.noteDiv);
+
+        // Add event listeners for text input and remove button
+        this.textArea.addEventListener('input', () => {
+            this.updateNote();
+        });
+
+        this.removeBtn.addEventListener('click', () => {
+            this.removeNote();
+        });
+    }
+
+    // Update the content of the note
+    updateNote() {
+        notes[this.index] = this.textArea.value;
+        this.saveToLocalStorage();
+    }
+
+    // Remove note from the UI and LocalStorage
+    removeNote() {
+        this.noteDiv.remove();
+        notes.splice(this.index, 1);
+        this.saveToLocalStorage();
+        // Refresh indexes for remaining notes
+        Note.refreshIndexes();
+    }
+
+    // Save notes to LocalStorage
+    saveToLocalStorage() {
+        localStorage.setItem('notes', JSON.stringify(notes));
+        if (lastSaved) {
+            lastSaved.textContent = `Last Saved: ${new Date().toLocaleTimeString()}`;
+        }
+    }
+
+    // Static method to refresh indexes after a note is removed
+    static refreshIndexes() {
+        Array.from(notesContainer.children).forEach((noteDiv, index) => {
+            const textArea = noteDiv.querySelector('textarea');
+            const note = new Note(textArea.value, index);
+            notes[index] = textArea.value;
+        });
+    }
+
+    // Static method to load notes from LocalStorage
+    static loadNotesFromStorage() {
+        const storedNotes = JSON.parse(localStorage.getItem('notes')) || [];
+        storedNotes.forEach((noteContent, index) => {
+            new Note(noteContent, index);
+            notes.push(noteContent);
+        });
+    }
+}
+
 // Global variables
-let notes = JSON.parse(localStorage.getItem('notes')) || [];
+let notes = [];
 const notesContainer = document.getElementById('notesContainer');
 const lastSaved = document.getElementById('lastSaved');
 const lastRetrieved = document.getElementById('lastRetrieved');
 
-// Function to save notes to localStorage and update the 'last saved' time
-function saveNotes() {
-    localStorage.setItem('notes', JSON.stringify(notes));
-    if (lastSaved) {
-        lastSaved.textContent = `Last Saved: ${new Date().toLocaleTimeString()}`;
-    }
-}
-
-// Function to add a note UI in writer.html
-function addNoteUI(content = "") {
-    const noteDiv = document.createElement('div');
-    noteDiv.classList.add('note');
-
-    const textArea = document.createElement('textarea');
-    textArea.value = content;
-    textArea.classList.add('form-control', 'mb-2');
-    noteDiv.appendChild(textArea);
-
-    const removeBtn = document.createElement('button');
-    removeBtn.textContent = "Remove";
-    removeBtn.classList.add('btn', 'btn-danger', 'mb-2');
-    noteDiv.appendChild(removeBtn);
-
-    // Remove note on button click
-    removeBtn.addEventListener('click', () => {
-        noteDiv.remove();
-        notes = notes.filter(note => note !== content);
-        saveNotes();
-    });
-
-    // Update notes array when user types in the textarea
-    textArea.addEventListener('input', () => {
-        const index = Array.from(notesContainer.children).indexOf(noteDiv);
-        notes[index] = textArea.value;
-    });
-
-    notesContainer.appendChild(noteDiv);
-}
-
-// Function to load and display notes in reader.html
+// Function to display notes in reader.html
 function displayNotes() {
-    // Reload notes from localStorage every time this function is called
     notes = JSON.parse(localStorage.getItem('notes')) || [];
     notesContainer.innerHTML = ""; // Clear the container
 
-    // Check if there are any notes stored
     if (notes.length === 0) {
         const noNotesMessage = document.createElement('p');
         noNotesMessage.textContent = "No notes found.";
@@ -74,17 +112,22 @@ function displayNotes() {
 if (document.getElementById('addNoteBtn')) {
     // This means we are on writer.html
     // Load existing notes into writer
-    notes.forEach(note => addNoteUI(note));
+    Note.loadNotesFromStorage();
 
     // Add event listener for the "Add Note" button
     document.getElementById('addNoteBtn').addEventListener('click', () => {
+        const newNote = new Note("", notes.length);
         notes.push("");
-        addNoteUI();
-        saveNotes();
+        newNote.saveToLocalStorage();
     });
 
     // Auto-save every 2 seconds
-    setInterval(saveNotes, 2000);
+    setInterval(() => {
+        if (lastSaved) {
+            lastSaved.textContent = `Last Saved: ${new Date().toLocaleTimeString()}`;
+        }
+    }, 2000);
+
 } else if (lastRetrieved) {
     // This means we are on reader.html
     // Load and display notes on reader page
