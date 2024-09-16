@@ -1,3 +1,8 @@
+/**
+ * ChatGPT was used to help with the development of this project.
+ * It was used to help with code structure and logic implementation for the game.
+ */
+
 class Note {
     constructor(content = "", index) {
         this.content = content;
